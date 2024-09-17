@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Rate My Professor for UGA",
+  "version": "1.0",
+  "description": "Displays Rate My Professor ratings on the Athena registration page.",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://athena-prod.uga.edu/StudentRegistrationSsb/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
