@@ -14,7 +14,6 @@ const profMap = new Map();
  */
 function getProfessorMetrics(professorName) {
     return new Promise((resolve, reject) => {
-        console.log("Sending professor name:", professorName); // TODO: Consider removing
         port.postMessage({professorName: professorName});
 
         /**
@@ -25,11 +24,9 @@ function getProfessorMetrics(professorName) {
          */
         function messageListener(msg) {
             if (msg.professorMetrics) {
-                console.log(`Data for professor ${professorName} received. Metric.avgRating is: ${msg.professorMetrics.avgRating}`); // TODO: Consider removing
                 port.onMessage.removeListener(messageListener);
-                resolve({name: professorName, metrics: msg.professorMetrics});
+                resolve(msg.professorMetrics);
             } else {
-                console.log(`Error receiving metrics for professor ${professorName} from service worker.`); // TODO: Consider removing/improving error handling
                 port.onMessage.removeListener(messageListener);
                 reject(new Error(`Failed to get metrics for professor ${professorName}`));
             }
@@ -43,21 +40,87 @@ function getProfessorMetrics(professorName) {
  * Processes an array of table elements containing professor names.
  * retrieves metrics for each professor, and updates the `profMap`.
  *
- * @param {Array<HTMLElement>} tables - An array of table elements (<td>) representing professor names.
+ * @param {NodeListOf<Element>} tables - An array of table elements (<td>) representing professor names.
  * @returns {Promise<void>} A promise that resolves when all professors have been processed.
  */
 async function processProfessorTables(tables) {
     for (const element of tables) {
-        const professorName = element.textContent;
+        const professorName = element.textContent.trim();
         if (professorName.length > 0 && !profMap.has(professorName)) {
             try {
                 const metrics = await getProfessorMetrics(professorName);
                 profMap.set(professorName, metrics);
-                console.log(`Updated metrics for ${professorName}:`, metrics); // TODO: Consider removing
             } catch (error) {
-                console.error(`Failed to get metrics for professor ${professorName}:`, error);
+                console.error(`processProfessorTables -> Failed to get metrics for professor ${professorName}:`, error);
                 profMap.set(professorName, null); // Store null to indicate failure
             }
+        }
+    }
+}
+
+/**
+ * Creates a DOM element to display professor ratings.
+ *
+ * @param {Object} metrics - The professor's rating metrics.
+ * @param {number} metrics.avgRating - The average overall rating (e.g., 4.5).
+ * @param {number} metrics.avgDifficulty - The average difficulty rating (e.g., 3.2).
+ * @param {number} metrics.numRatings - The total number of ratings.
+ * @param {number} metrics.wouldTakeAgainPercent - The percentage of students who would take the course again (0-100).
+ * @returns {HTMLDivElement} The created DOM element.
+ */
+function createRatingElement(metrics) {
+    const ratingDiv = document.createElement('div');
+
+    // Create and append overall rating
+    const overallSpan = document.createElement('span');
+    overallSpan.textContent = "Overall: " + metrics.avgRating + " / 5";
+    ratingDiv.appendChild(overallSpan);
+    ratingDiv.appendChild(document.createElement('br'));
+
+    // Create and append difficulty rating
+    const difficultySpan = document.createElement('span');
+    difficultySpan.textContent = "Difficulty: " + metrics.avgDifficulty + " / 5";
+    ratingDiv.appendChild(difficultySpan);
+    ratingDiv.appendChild(document.createElement('br'));
+
+    // Create and append total number of ratings
+    const numRatingsSpan = document.createElement('span');
+    numRatingsSpan.textContent = "Total Ratings: " + metrics.numRatings;
+    ratingDiv.appendChild(numRatingsSpan);
+    ratingDiv.appendChild(document.createElement('br'));
+
+    // Create and append "would take again" percentage
+    const wouldTakeAgainSpan = document.createElement('span');
+    const roundedPercentage = Math.round(metrics.wouldTakeAgainPercent);
+    wouldTakeAgainSpan.textContent = "Would Take Again: " + roundedPercentage + "%";
+    ratingDiv.appendChild(wouldTakeAgainSpan);
+
+    return ratingDiv;
+}
+
+/**
+ * Inserts the rating element into the correct table cell.
+ *
+ * @param {HTMLTableCellElement} professorCell - The name of the professor.
+ * @param {HTMLDivElement} ratingElement - The element containing the formatted rating.
+ */
+function insertRating(professorCell, ratingElement) {
+    professorCell.append(ratingElement);
+}
+
+/**
+ * Updates the displayed professor ratings based on the profMap.
+ */
+async function updateProfessorRatings() {
+    const professorCells = document.querySelectorAll('td[data-property="instructor"]');
+
+    for (const cell of professorCells) {
+        const professorName = cell.textContent.trim(); // TODO: Maybe could do without trimming?
+        const metrics = profMap.get(professorName);
+
+        if (metrics) {
+            const ratingElement = createRatingElement(metrics);
+            insertRating(cell, ratingElement);
         }
     }
 }
@@ -72,13 +135,9 @@ async function processProfessorTables(tables) {
 async function handleMutations(mutations, observer) {
     const tables = document.querySelectorAll('td[data-property="instructor"]');
 
-    // Filter out professors that already exist in profMap
-    const newTables = Array.from(tables).filter(table => !profMap.has(table.textContent.trim()));
-
-    if (newTables.length > 0) {
-        console.log("New professor tables detected, processing..."); // TODO: Consider removing
-        await processProfessorTables(newTables);
-        console.log("Updated global professor map:", profMap); // TODO: Consider removing
+    if (tables.length > 0) {
+        await processProfessorTables(tables);
+        await updateProfessorRatings(); // Insert professor ratings into the DOM after processing new tables
     }
 
     // TODO: Use profMap here to update the displayed professor information.
@@ -88,8 +147,6 @@ async function handleMutations(mutations, observer) {
  * Initializes the extension by setting up the MutationObserver.
  */
 function initializeExtension() {
-    console.log("Initializing extension..."); // TODO: Consider removing
-
     // Set up the MutationObserver to observe changes in the document body
     const observer = new MutationObserver(handleMutations);
     observer.observe(document.body, { childList: true });
