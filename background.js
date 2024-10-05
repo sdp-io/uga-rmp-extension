@@ -1,10 +1,20 @@
-// Link to access the RMP GraphQL API.
+/**
+ * Base URL for the Rate My Professors GraphQL API.
+ * @type {string}
+ */
 URL = "https://www.ratemyprofessors.com/graphql"
 
-// Publicly available authentication token to access RMP GraphQL API.
+/**
+ * Authentication token for accessing the RMP GraphQL API.
+ * This is a publicly known token provided by Rate My Professors for testing and development.
+ * @type {string}
+ */
 AUTH_TOKEN = "dGVzdDp0ZXN0"
 
-// Base64 encoded identifier for the University of Georgia.
+/**
+ * Base64 encoded school ID for the University of Georgia.
+ * @type {string}
+ */
 SCHOOL_ID = "U2Nob29sLTExMDE="
 
 /**
@@ -151,8 +161,6 @@ chrome.runtime.onConnect.addListener(function(port) {
         if (msg.professorName) {
             const profID = await getProfessorID(msg.professorName);
             const profMetrics = await getProfessorMetrics(profID);
-            console.log(`Received professor ${msg.professorName} received. ID is: ${profID}`) // TODO: Consider removing
-            console.log('Professor metrics resolved:', profMetrics) // TODO: Consider removing
             port.postMessage({professorMetrics: profMetrics});
         } else {
             console.error("Error checking msg.professorName"); // Log errors
