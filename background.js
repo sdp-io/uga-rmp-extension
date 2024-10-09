@@ -160,6 +160,12 @@ chrome.runtime.onConnect.addListener(function(port) {
     port.onMessage.addListener(async function(msg) {
         if (msg.professorName) {
             const profID = await getProfessorID(msg.professorName);
+
+            if (profID === null) {
+                port.postMessage({professorMetrics: null});
+                return;
+            }
+
             const profMetrics = await getProfessorMetrics(profID);
             port.postMessage({professorMetrics: profMetrics});
         } else {

@@ -71,6 +71,14 @@ async function processProfessorTables(tables) {
 function createRatingElement(metrics) {
     const ratingDiv = document.createElement('div');
 
+    // Handle cases where the professor page does not exist
+    if (metrics === null) {
+        const noPageFoundSpan = document.createElement('span');
+        noPageFoundSpan.textContent = "No page found.";
+        ratingDiv.appendChild(noPageFoundSpan);
+        return ratingDiv;
+    }
+
     // Create and append overall rating
     const overallSpan = document.createElement('span');
     overallSpan.textContent = "Overall: " + metrics.avgRating + " / 5";
@@ -88,6 +96,14 @@ function createRatingElement(metrics) {
     numRatingsSpan.textContent = "Total Ratings: " + metrics.numRatings;
     ratingDiv.appendChild(numRatingsSpan);
     ratingDiv.appendChild(document.createElement('br'));
+
+    // Handle cases where no ratings exist
+    if (metrics.wouldTakeAgainPercent === -1) {
+        const noRatingsSpan = document.createElement('span');
+        noRatingsSpan.textContent = "No ratings available yet.";
+        ratingDiv.appendChild(noRatingsSpan);
+        return ratingDiv;
+    }
 
     // Create and append "would take again" percentage
     const wouldTakeAgainSpan = document.createElement('span');
@@ -116,12 +132,15 @@ async function updateProfessorRatings() {
 
     for (const cell of professorCells) {
         const professorName = cell.textContent.trim(); // TODO: Maybe could do without trimming?
-        const metrics = profMap.get(professorName);
 
-        if (metrics) {
-            const ratingElement = createRatingElement(metrics);
-            insertRating(cell, ratingElement);
+        if (!professorName) {
+            // Skip empty cells
+            continue;
         }
+
+        const metrics = profMap.get(professorName);
+        const ratingElement = createRatingElement(metrics);
+        insertRating(cell, ratingElement);
     }
 }
 
