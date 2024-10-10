@@ -59,6 +59,19 @@ async function processProfessorTables(tables) {
 }
 
 /**
+ * Creates a span element with the given text content.
+ *
+ * @param {string} text - The text content for the span.
+ * @return {HTMLSpanElement} The created span element.
+ */
+
+function createSpan(text) {
+    const span = document.createElement('span');
+    span.textContent = text;
+    return span;
+}
+
+/**
  * Creates a DOM element to display professor ratings.
  *
  * @param {Object} metrics - The professor's rating metrics.
@@ -66,6 +79,7 @@ async function processProfessorTables(tables) {
  * @param {number} metrics.avgDifficulty - The average difficulty rating (e.g., 3.2).
  * @param {number} metrics.numRatings - The total number of ratings.
  * @param {number} metrics.wouldTakeAgainPercent - The percentage of students who would take the course again (0-100).
+ * @param {string} metrics.RMPLink - The link to the professor's RateMyProfessor page.
  * @returns {HTMLDivElement} The created DOM element.
  */
 function createRatingElement(metrics) {
@@ -73,43 +87,38 @@ function createRatingElement(metrics) {
 
     // Handle cases where the professor page does not exist
     if (metrics === null) {
-        const noPageFoundSpan = document.createElement('span');
-        noPageFoundSpan.textContent = "No page found.";
-        ratingDiv.appendChild(noPageFoundSpan);
-        return ratingDiv;
+        ratingDiv.appendChild(createSpan("No page found."));
+        return ratingDiv; // Return early if no metrics found
     }
 
-    // Create and append overall rating
-    const overallSpan = document.createElement('span');
-    overallSpan.textContent = "Overall: " + metrics.avgRating + " / 5";
-    ratingDiv.appendChild(overallSpan);
-    ratingDiv.appendChild(document.createElement('br'));
+    // Create and append overall rating, difficulty, and total ratings
+    const ratingInfo = [
+            `Overall: ${metrics.avgRating} / 5`,
+            `Difficulty: ${metrics.avgDifficulty} / 5`,
+            `Total Ratings: ${metrics.numRatings}`
+    ];
 
-    // Create and append difficulty rating
-    const difficultySpan = document.createElement('span');
-    difficultySpan.textContent = "Difficulty: " + metrics.avgDifficulty + " / 5";
-    ratingDiv.appendChild(difficultySpan);
-    ratingDiv.appendChild(document.createElement('br'));
+    ratingInfo.forEach(info => {
+       ratingDiv.appendChild(createSpan(info))
+       ratingDiv.appendChild(document.createElement('br'));
+    });
 
-    // Create and append total number of ratings
-    const numRatingsSpan = document.createElement('span');
-    numRatingsSpan.textContent = "Total Ratings: " + metrics.numRatings;
-    ratingDiv.appendChild(numRatingsSpan);
-    ratingDiv.appendChild(document.createElement('br'));
-
-    // Handle cases where no ratings exist
+    // Handle cases where no ratings exist or append "would take again" percentage
     if (metrics.wouldTakeAgainPercent === -1) {
-        const noRatingsSpan = document.createElement('span');
-        noRatingsSpan.textContent = "No ratings available yet.";
-        ratingDiv.appendChild(noRatingsSpan);
-        return ratingDiv;
+        ratingDiv.appendChild(createSpan("No ratings available yet."));
+    } else {
+        const roundedPercentage = Math.round(metrics.wouldTakeAgainPercent);
+        ratingDiv.appendChild(createSpan(`Would take again: ${roundedPercentage}%`));
     }
 
-    // Create and append "would take again" percentage
-    const wouldTakeAgainSpan = document.createElement('span');
-    const roundedPercentage = Math.round(metrics.wouldTakeAgainPercent);
-    wouldTakeAgainSpan.textContent = "Would Take Again: " + roundedPercentage + "%";
-    ratingDiv.appendChild(wouldTakeAgainSpan);
+    ratingDiv.appendChild(document.createElement('br'));
+
+    // Create and append link to the professor's RateMyProfessor page
+    const RMPLinkAnchor = document.createElement('a');
+    RMPLinkAnchor.href = metrics.RMPLink;
+    RMPLinkAnchor.textContent = "View on RMP »";
+    RMPLinkAnchor.target = "_blank";
+    ratingDiv.appendChild(RMPLinkAnchor);
 
     return ratingDiv;
 }

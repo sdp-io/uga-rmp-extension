@@ -153,6 +153,48 @@ async function getProfessorMetrics(professorID) {
 }
 
 /**
+ * Constructs the Rate My Professor link for a given professor ID.
+ *
+ * @param professorID {string} - The base64-encoded professor ID. When decoded, this string must be in the format
+ *                               "Teacher-XXXXXXXX", where XXXXXXXX is the numeric ID.
+ * @return {null|string} The Rate My Professor URL, or null if an error occurred during decoding.
+ */
+function getRMPProfessorLink(professorID) {
+    try {
+        const decodedProfID = atob(professorID); // Decode the base64 ID
+        const binaryProfID = decodedProfID.replace("Teacher-", ""); // Extract numeric ID
+
+        return `https://www.ratemyprofessors.com/professor/${binaryProfID}`;
+    } catch (error) {
+        console.error("Error decoding or constructing RateMyProfessor link"); // TODO: Consider removing/improving
+        return null;
+    }
+}
+
+/**
+ * Retrieves professor metrics and includes the RateMyProfessor link for the professor.
+ *
+ * @param {string} professorID - The base64-encoded professor ID.
+ * @return {Promise<{Object}|null>} A promise that resolves with an object containing the professor's metrics
+ *                                  and RateMyProfessor link, or null if no metrics were found or if an error
+ *                                  occurred. If successful, the returned object will have the following
+ *                                  structure:
+ *                                  {
+ *                                      // ... other metrics (avgRating, avgDifficulty, etc.)
+ *                                      RMPLink: string // The RateMyProfessor link
+ *                                  }
+ */
+async function getProfessorMetricsWithLink(professorID) {
+    const metrics = await getProfessorMetrics(professorID);
+
+    if (metrics) {
+        metrics.RMPLink = getRMPProfessorLink(professorID); // Add the RMP link to the metrics object
+    }
+
+    return metrics;
+}
+
+/**
  * Event listener for establishing connection with the extension's content script.
  * Listens for messages containing professor names, then retrieves their metrics from the RMP API.
  */
@@ -166,7 +208,8 @@ chrome.runtime.onConnect.addListener(function(port) {
                 return;
             }
 
-            const profMetrics = await getProfessorMetrics(profID);
+            const profMetrics = await getProfessorMetricsWithLink(profID);
+            console.log(`Professor metrics with link:`, profMetrics);
             port.postMessage({professorMetrics: profMetrics});
         } else {
             console.error("Error checking msg.professorName"); // Log errors
