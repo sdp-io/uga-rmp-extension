@@ -46,8 +46,8 @@ async function getProfessorID(professorName) {
       }`; // GraphQL query to fetch professor data
 
     const variables = {
-            name: professorName,
-            schoolID: SCHOOL_ID
+        name: professorName,
+        schoolID: SCHOOL_ID
     }
 
     const options = {
@@ -59,21 +59,48 @@ async function getProfessorID(professorName) {
         body: JSON.stringify({query, variables})
     };
 
-    // Get the ID of the first matching professor from the API response's 'edges' array.
+    const [profFirstName, profLastName] = professorName.split(" ");
+
+    // Get the ID of the most relevant professor from the API response
     try {
         const response = await fetch(URL, options);
         const data = await response.json();
-        const firstEdge = data?.data?.newSearch?.teachers?.edges?.[0];
+        const edges = data?.data?.newSearch?.teachers?.edges;
 
-        if (firstEdge) {
-            const node = firstEdge.node;
-            return node.id;
-        } else {
-            return null;
+        if (!edges || edges.length === 0) {
+            return null; // No professor found in search results
         }
+
+        const firstNode = edges[0].node;
+
+        // Verify that the first node matches the provided professor name
+        if (firstNode.firstName !== profFirstName || firstNode.lastName !== profLastName) {
+            return null; // Professor name mismatch
+        }
+
+        // Handle cases with multiple search results for the same professor
+        if (edges.length >= 2) {
+            const secondNode = edges[1].node;
+
+            // Handle cases where a professor has two nodes
+            if (firstNode.firstName === secondNode.firstName && firstNode.lastName === secondNode.lastName) {
+                // Fetch metrics for both nodes
+                const firstMetrics = await getProfessorMetrics(firstNode.id);
+                const secondMetrics = await getProfessorMetrics(secondNode.id);
+
+                // Return the ID of the node with more ratings (or the first node if this number is equal)
+                if (firstMetrics && secondMetrics) {
+                    return firstMetrics.numRatings >= secondMetrics.numRatings ? firstNode.id : secondNode.id;
+                }
+            }
+        }
+
+        // Default: Return the first node's ID (if it passed the name check)
+        return firstNode.id;
+
     } catch (error) {
         console.error("Error fetching professor ID:", error); // TODO: Consider removing/improving error handling
-        return null;
+        return null; // Return null to indicate error
     }
 }
 
@@ -155,7 +182,7 @@ async function getProfessorMetrics(professorID) {
 /**
  * Constructs the Rate My Professor link for a given professor ID.
  *
- * @param professorID {string} - The base64-encoded professor ID. When decoded, this string must be in the format
+ * @param {string} professorID - The base64-encoded professor ID. When decoded, this string must be in the format
  *                               "Teacher-XXXXXXXX", where XXXXXXXX is the numeric ID.
  * @return {null|string} The Rate My Professor URL, or null if an error occurred during decoding.
  */
@@ -209,7 +236,6 @@ chrome.runtime.onConnect.addListener(function(port) {
             }
 
             const profMetrics = await getProfessorMetricsWithLink(profID);
-            console.log(`Professor metrics with link:`, profMetrics);
             port.postMessage({professorMetrics: profMetrics});
         } else {
             console.error("Error checking msg.professorName"); // Log errors

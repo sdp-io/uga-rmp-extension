@@ -4,6 +4,8 @@ const port = chrome.runtime.connect({name: "professorMetrics"});
 // Store processed professor names as keys and their metrics as values.
 const profMap = new Map();
 
+const PRIMARY_PROFESSOR_REGEX = /([\w-]+)\s+(?:[A-Z]\.\s+)?([\w-]+)\s*\(Primary\)/;
+
 /**
  * Retrieves professor metrics from the background service worker.
  *
@@ -37,6 +39,20 @@ function getProfessorMetrics(professorName) {
 }
 
 /**
+ * Normalizes a professor's name from the format used on the registration page.
+ * This function assumes the name is in the format "FirstName LastName (Primary)"
+ * or similar variations (e.g., with middle initials, hyphens, or assisting professor names).
+ *
+ * @param {string} name - The professor's name to normalize.
+ * @return {string} The normalized professor name in the format "FirstName LastName",
+ *                  or the original name if the input format is not recognized.
+ */
+function normalizeProfessorName(name) {
+    const match = name.match(PRIMARY_PROFESSOR_REGEX);
+    return match ? `${match[1]} ${match[2]}` : name;
+}
+
+/**
  * Processes an array of table elements containing professor names.
  * retrieves metrics for each professor, and updates the `profMap`.
  *
@@ -45,9 +61,10 @@ function getProfessorMetrics(professorName) {
  */
 async function processProfessorTables(tables) {
     for (const element of tables) {
-        const professorName = element.textContent.trim();
+        let professorName = element.textContent.trim();
         if (professorName.length > 0 && !profMap.has(professorName)) {
             try {
+                professorName = normalizeProfessorName(professorName);
                 const metrics = await getProfessorMetrics(professorName);
                 profMap.set(professorName, metrics);
             } catch (error) {
@@ -140,7 +157,7 @@ async function updateProfessorRatings() {
     const professorCells = document.querySelectorAll('td[data-property="instructor"]');
 
     for (const cell of professorCells) {
-        const professorName = cell.textContent.trim(); // TODO: Maybe could do without trimming?
+        const professorName = normalizeProfessorName(cell.textContent.trim());
 
         if (!professorName) {
             // Skip empty cells
