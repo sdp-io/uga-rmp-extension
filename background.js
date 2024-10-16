@@ -114,7 +114,6 @@ async function getProfessorID(professorName) {
  *                                   {
  *                                      avgDifficulty: number,
  *                                      avgRating: number,
- *                                      department: string,
  *                                      numRatings: number,
  *                                      wouldTakeAgainPercent: number
  *                                   }
@@ -135,7 +134,6 @@ async function getProfessorMetrics(professorID) {
             }
             avgDifficulty
             avgRating
-            department
             numRatings
             legacyId
             wouldTakeAgainPercent
@@ -166,7 +164,6 @@ async function getProfessorMetrics(professorID) {
             return {
                 avgDifficulty: node.avgDifficulty,
                 avgRating: node.avgRating,
-                department: node.department,
                 numRatings: node.numRatings,
                 wouldTakeAgainPercent: node.wouldTakeAgainPercent
             };
