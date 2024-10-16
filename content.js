@@ -1,10 +1,17 @@
-// Establish a long-lived connection with the service worker
-const port = chrome.runtime.connect({name: "professorMetrics"});
+/**
+ * The maximum number of attempts to reconnect to the background script
+ * before giving up and refreshing the page.
+ */
+const MAX_RETRIES = 3;
 
-// Store processed professor names as keys and their metrics as values.
-const profMap = new Map();
-
+// Regex to extract the primary professor's name (used in normalizeProfessorName)
 const PRIMARY_PROFESSOR_REGEX = /([\w-]+)\s+(?:[A-Z]\.\s+)?([\w-]+)\s*\(Primary\)/;
+
+// Establish a long-lived connection with the service worker
+let port = chrome.runtime.connect({name: "professorMetrics"});
+
+// Store processed professor names as keys and their metrics as values
+const profMap = new Map();
 
 /**
  * Retrieves professor metrics from the background service worker.
@@ -14,7 +21,7 @@ const PRIMARY_PROFESSOR_REGEX = /([\w-]+)\s+(?:[A-Z]\.\s+)?([\w-]+)\s*\(Primary\
  *                             or rejects with an Error if the retrieval fails. The resolved object has the form:
  *                             { name: professorName, metrics: { ... metrics data ... } }
  */
-function getProfessorMetrics(professorName) {
+async function getProfessorMetrics(professorName) {
     return new Promise((resolve, reject) => {
         port.postMessage({professorName: professorName});
 
@@ -57,9 +64,10 @@ function normalizeProfessorName(name) {
  * retrieves metrics for each professor, and updates the `profMap`.
  *
  * @param {NodeListOf<Element>} tables - An array of table elements (<td>) representing professor names.
+ * @param {number} retryCount - The current retry attempt count (used internally for reconnections).
  * @returns {Promise<void>} A promise that resolves when all professors have been processed.
  */
-async function processProfessorTables(tables) {
+async function processProfessorTables(tables, retryCount = 0) {
     for (const element of tables) {
         let professorName = element.textContent.trim();
         if (professorName.length > 0 && !profMap.has(professorName)) {
@@ -68,6 +76,23 @@ async function processProfessorTables(tables) {
                 const metrics = await getProfessorMetrics(professorName);
                 profMap.set(professorName, metrics);
             } catch (error) {
+                if (error.message.includes('Extension context invalidated.')) {
+                    window.location.reload(); // Refresh the current tab to re-inject the content script
+                    return; // Exit the function early as further processing will fail
+                }
+
+                if (error.message.includes('Attempting to use a disconnected port object')) {
+                    // The connection to the background script has been lost
+                    if (retryCount >= MAX_RETRIES) {
+                        console.error(`Max retries (${MAX_RETRIES}) exceeded. Refreshing page.`);
+                        window.location.reload();
+                        return;
+                    }
+                    // Attempt to reconnect to the background script and retry processing the professor tables
+                    port = chrome.runtime.connect({name: "professorMetrics"});
+                    return await processProfessorTables(tables, retryCount + 1);
+                }
+
                 console.error(`processProfessorTables -> Failed to get metrics for professor ${professorName}:`, error);
                 profMap.set(professorName, null); // Store null to indicate failure
             }
@@ -110,14 +135,14 @@ function createRatingElement(metrics) {
 
     // Create and append overall rating, difficulty, and total ratings
     const ratingInfo = [
-            `Overall: ${metrics.avgRating} / 5`,
-            `Difficulty: ${metrics.avgDifficulty} / 5`,
-            `Total Ratings: ${metrics.numRatings}`
+        `Overall: ${metrics.avgRating} / 5`,
+        `Difficulty: ${metrics.avgDifficulty} / 5`,
+        `Total Ratings: ${metrics.numRatings}`
     ];
 
     ratingInfo.forEach(info => {
-       ratingDiv.appendChild(createSpan(info))
-       ratingDiv.appendChild(document.createElement('br'));
+        ratingDiv.appendChild(createSpan(info))
+        ratingDiv.appendChild(document.createElement('br'));
     });
 
     // Handle cases where no ratings exist or append "would take again" percentage
@@ -173,11 +198,8 @@ async function updateProfessorRatings() {
 /**
  * Callback function for the MutationObserver.
  * Detects changes in the DOM and processes new professor table elements.
- *
- * @param mutations - An array of MutationRecord objects describing the changes.
- * @param observer - The MutationObserver instance.
  */
-async function handleMutations(mutations, observer) {
+async function handleMutations() {
     const tables = document.querySelectorAll('td[data-property="instructor"]');
 
     if (tables.length > 0) {
