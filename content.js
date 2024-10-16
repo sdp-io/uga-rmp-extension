@@ -70,32 +70,43 @@ function normalizeProfessorName(name) {
 async function processProfessorTables(tables, retryCount = 0) {
     for (const element of tables) {
         let professorName = element.textContent.trim();
-        if (professorName.length > 0 && !profMap.has(professorName)) {
-            try {
-                professorName = normalizeProfessorName(professorName);
-                const metrics = await getProfessorMetrics(professorName);
-                profMap.set(professorName, metrics);
-            } catch (error) {
-                if (error.message.includes('Extension context invalidated.')) {
-                    window.location.reload(); // Refresh the current tab to re-inject the content script
-                    return; // Exit the function early as further processing will fail
-                }
 
-                if (error.message.includes('Attempting to use a disconnected port object')) {
-                    // The connection to the background script has been lost
-                    if (retryCount >= MAX_RETRIES) {
-                        console.error(`Max retries (${MAX_RETRIES}) exceeded. Refreshing page.`);
-                        window.location.reload();
-                        return;
-                    }
-                    // Attempt to reconnect to the background script and retry processing the professor tables
-                    port = chrome.runtime.connect({name: "professorMetrics"});
-                    return await processProfessorTables(tables, retryCount + 1);
-                }
+        // Check for empty table cells BEFORE normalization
+        if (professorName.length === 0) {
+            continue; // Skip to the next iteration if professor name is blank
+        }
 
-                console.error(`processProfessorTables -> Failed to get metrics for professor ${professorName}:`, error);
-                profMap.set(professorName, null); // Store null to indicate failure
+        // Normalize the professor's name
+        professorName = normalizeProfessorName(professorName);
+
+        // Check if the normalized name has already been processed
+        if (profMap.has(professorName)) {
+            continue; // Skip to the next iteration
+        }
+
+        try {
+            const metrics = await getProfessorMetrics(professorName);
+            profMap.set(professorName, metrics);
+        } catch (error) {
+            if (error.message.includes('Extension context invalidated.')) {
+                window.location.reload(); // Refresh the current tab to re-inject the content script
+                return; // Exit the function early as further processing will fail
             }
+
+            if (error.message.includes('Attempting to use a disconnected port object')) {
+                // The connection to the background script has been lost
+                if (retryCount >= MAX_RETRIES) {
+                    console.error(`Max retries (${MAX_RETRIES}) exceeded. Refreshing page.`);
+                    window.location.reload();
+                    return;
+                }
+                // Attempt to reconnect to the background script and retry processing the professor tables
+                port = chrome.runtime.connect({name: "professorMetrics"});
+                return await processProfessorTables(tables, retryCount + 1);
+            }
+
+            console.error(`processProfessorTables -> Failed to get metrics for professor ${professorName}:`, error);
+            profMap.set(professorName, null); // Store null to indicate failure
         }
     }
 }
