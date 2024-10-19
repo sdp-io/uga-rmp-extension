@@ -3,10 +3,6 @@
   "name": "Rate My Professor for UGA",
   "version": "1.0",
   "description": "Displays Rate My Professor ratings on the Athena registration page.",
-  "permissions": [
-    "activeTab",
-    "storage"
-  ],
   "host_permissions": [
     "https://www.ratemyprofessors.com/*"
   ],
