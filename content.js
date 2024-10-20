@@ -13,6 +13,8 @@ let port = chrome.runtime.connect({name: "professorMetrics"});
 // Store processed professor names as keys and their metrics as values
 const profMap = new Map();
 
+let observer;
+
 /**
  * Retrieves professor metrics from the background service worker.
  *
@@ -105,7 +107,6 @@ async function processProfessorTables(tables, retryCount = 0) {
                 return await processProfessorTables(tables, retryCount + 1);
             }
 
-            console.error(`processProfessorTables -> Failed to get metrics for professor ${professorName}:`, error);
             profMap.set(professorName, null); // Store null to indicate failure
         }
     }
@@ -195,8 +196,13 @@ async function updateProfessorRatings() {
     for (const cell of professorCells) {
         const professorName = normalizeProfessorName(cell.textContent.trim());
 
-        if (!professorName) {
-            // Skip empty cells
+        // Remove any existing rating div elements from the cell to prevent duplicates
+        const existingRatings = cell.querySelector('div');
+        if (existingRatings) {
+            existingRatings.remove();
+        }
+
+        if (!professorName) { // Skip empty cells
             continue;
         }
 
@@ -217,8 +223,6 @@ async function handleMutations() {
         await processProfessorTables(tables);
         await updateProfessorRatings(); // Insert professor ratings into the DOM after processing new tables
     }
-
-    // TODO: Use profMap here to update the displayed professor information.
 }
 
 /**
@@ -226,7 +230,7 @@ async function handleMutations() {
  */
 function initializeExtension() {
     // Set up the MutationObserver to observe changes in the document body
-    const observer = new MutationObserver(handleMutations);
+    observer = new MutationObserver(handleMutations);
     observer.observe(document.body, { childList: true });
 }
 
