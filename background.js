@@ -84,9 +84,11 @@ async function getProfessorID(professorName) {
 
             // Handle cases where a professor has two nodes
             if (firstNode.firstName === secondNode.firstName && firstNode.lastName === secondNode.lastName) {
-                // Fetch metrics for both nodes
-                const firstMetrics = await getProfessorMetrics(firstNode.id);
-                const secondMetrics = await getProfessorMetrics(secondNode.id);
+                // Concurrently fetch metrics for both nodes
+                const [firstMetrics, secondMetrics] = await Promise.all([
+                    getProfessorMetrics(firstNode.id),
+                    getProfessorMetrics(secondNode.id)
+                ]);
 
                 // Return the ID of the node with more ratings (or the first node if this number is equal)
                 if (firstMetrics && secondMetrics) {
