@@ -1,6 +1,10 @@
 # uga-rmp-extension
 **Description:** This Chrome extension seamlessly integrates Rate My Professors (RMP) data directly into the University of Georgia's Athena course registration page, providing you with valuable professor insights and metrics right where you need them. 
 
+## Preview
+![Extension Demo](./assets/demo.png)
+*Red outline indicates where RateMyProfessor metrics are automatically inserted*
+
 ## Features
 * Automatic professor detection and metric integration
 * Real-time data fetching from RateMyProfessor via the RateMyProfessor GraphQL API
