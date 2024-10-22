@@ -13,8 +13,6 @@ let port = chrome.runtime.connect({name: "professorMetrics"});
 // Store processed professor names as keys and their metrics as values
 const profMap = new Map();
 
-let observer;
-
 /**
  * Retrieves professor metrics from the background service worker.
  *
@@ -118,7 +116,6 @@ async function processProfessorTables(tables, retryCount = 0) {
  * @param {string} text - The text content for the span.
  * @return {HTMLSpanElement} The created span element.
  */
-
 function createSpan(text) {
     const span = document.createElement('span');
     span.textContent = text;
@@ -230,8 +227,8 @@ async function handleMutations() {
  */
 function initializeExtension() {
     // Set up the MutationObserver to observe changes in the document body
-    observer = new MutationObserver(handleMutations);
-    observer.observe(document.body, { childList: true });
+    const observer = new MutationObserver(handleMutations);
+    observer.observe(document.body, {childList: true});
 }
 
 // Run the initialization when the content script loads
