@@ -2,20 +2,20 @@
  * Base URL for the Rate My Professors GraphQL API.
  * @type {string}
  */
-URL = "https://www.ratemyprofessors.com/graphql"
+URL = "https://www.ratemyprofessors.com/graphql";
 
 /**
- * Authentication token for accessing the RMP GraphQL API.
- * This is a publicly known token provided by Rate My Professors for testing and development.
+ * Publicly available authentication token for the Rate My Professors GraphQL API.
+ * This token is publicly known and used in multiple open-source projects.
  * @type {string}
  */
-AUTH_TOKEN = "dGVzdDp0ZXN0"
+AUTH_TOKEN = "dGVzdDp0ZXN0";
 
 /**
  * Base64 encoded school ID for the University of Georgia.
  * @type {string}
  */
-SCHOOL_ID = "U2Nob29sLTExMDE="
+SCHOOL_ID = "U2Nob29sLTExMDE=";
 
 /**
  * Fetches professor data from the RMP GraphQL API and returns the ID of the first match.
