@@ -66,7 +66,7 @@ This extension currently operates without requiring any configuration. It automa
 ## License
 This project is licensed under the MIT License. This extension was developed independently as a personal project to enhance the course registration experience at the University of Georgia. It leverages the publicly available Rate My Professors API to provide students with valuable professor insights.
 
-Due to the nature of the Rate My Professors API and the limited ways to access its data, the technical implementation of certain functionalities, such as querying the API using GraphQL, might share similarities with other projects that also utilize this API. However, the core logic of our extension, including:
+Due to the nature of the Rate My Professors API and the limited ways to access its data, the technical implementation of certain functionalities, such as querying the API using GraphQL, might share similarities with other projects that also utilize this API. However, the core logic of this extension, including:
 - DOM manipulation
 - User interface elements
 - Error handling
