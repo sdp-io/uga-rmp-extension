@@ -20,14 +20,14 @@
 * Fallback handling for professors without Rate My Professors pages
 
 ## Installation
-### Chrome Web Store (Coming Soon)
-1. Visit the Chrome Web Store page (link coming soon)
+### Chrome Web Store
+1. Visit the Chrome Web Store page: [Rate My Professors for UGA](https://chromewebstore.google.com/detail/rate-my-professor-for-uga/jconcnkhdpkoieikcejihnfciklijbdp)
 2. Click "Add to Chrome"
 3. Follow the prompts to complete installation
 
 ### Manual Installation (For Development)
 1. Clone this repository: `git clone https://github.com/[your-username]/uga-rmp-extension.git`
-2. Open Chrome and navigate to chrome://extensions/
+2. Open Chrome and navigate to `chrome://extensions/`
 3. Enable "Developer mode" using the toggle in the top-right corner
 4. Click "Load unpacked"
 5. Select the directory containing the extension files
