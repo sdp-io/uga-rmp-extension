@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Rate My Professor for UGA",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Displays Rate My Professor ratings on the Athena registration page.",
   "host_permissions": [
     "https://www.ratemyprofessors.com/*"
