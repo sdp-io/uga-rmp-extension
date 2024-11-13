@@ -7,9 +7,6 @@ const MAX_RETRIES = 3;
 // Regex to extract the primary professor's name (used in normalizeProfessorName)
 const PRIMARY_PROFESSOR_REGEX = /([\w-]+)\s+(?:[A-Z]\.\s+)?([\w-]+)\s*\(Primary\)/;
 
-// Establish a long-lived connection with the service worker
-let port = chrome.runtime.connect({name: "professorMetrics"});
-
 // Store processed professor names as keys and their metrics as values
 const profMap = new Map();
 
@@ -22,6 +19,7 @@ const profMap = new Map();
  *                             { name: professorName, metrics: { ... metrics data ... } }
  */
 async function getProfessorMetrics(professorName) {
+    const port = chrome.runtime.connect({name: "professorMetrics"});
     return new Promise((resolve, reject) => {
         port.postMessage({professorName: professorName});
 
@@ -32,12 +30,17 @@ async function getProfessorMetrics(professorName) {
          * @param msg - The message received from the service worker.
          */
         function messageListener(msg) {
-            if (msg.professorMetrics) {
-                port.onMessage.removeListener(messageListener);
-                resolve(msg.professorMetrics);
-            } else {
-                port.onMessage.removeListener(messageListener);
-                reject(new Error(`Failed to get metrics for professor ${professorName}`));
+            try {
+                if (msg.professorMetrics) {
+                    port.onMessage.removeListener(messageListener);
+                    resolve(msg.professorMetrics);
+                } else {
+                    port.onMessage.removeListener(messageListener);
+                    reject(new Error(`Failed to get metrics for professor ${professorName}`));
+                }
+            } finally {
+                // Close port for cleanup
+                port.disconnect();
             }
         }
 

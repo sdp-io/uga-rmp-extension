@@ -216,7 +216,6 @@ async function getProfessorMetricsWithLink(professorID) {
     if (metrics) {
         metrics.RMPLink = getRMPProfessorLink(professorID); // Add the RMP link to the metrics object
     }
-
     return metrics;
 }
 
