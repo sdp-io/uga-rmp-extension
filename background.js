@@ -72,18 +72,23 @@ async function getProfessorID(professorName) {
         }
 
         const firstNode = edges[0].node;
+        const firstNodeFirstName = firstNode.firstName.trim();
+        const firstNodeLastName = firstNode.lastName.trim();
+
 
         // Verify that the first node matches the provided professor name
-        if (firstNode.firstName !== profFirstName || firstNode.lastName !== profLastName) {
+        if (!profFirstName.includes(firstNodeFirstName) || firstNodeLastName !== profLastName) {
             return null; // Professor name mismatch
         }
 
         // Handle cases with multiple search results for the same professor
         if (edges.length >= 2) {
             const secondNode = edges[1].node;
+            const secondNodeFirstName = secondNode.firstName.trim();
+            const secondNodeLastName = secondNode.lastName.trim();
 
             // Handle cases where a professor has two nodes
-            if (firstNode.firstName === secondNode.firstName && firstNode.lastName === secondNode.lastName) {
+            if (firstNodeFirstName === secondNodeFirstName && firstNodeLastName === secondNodeLastName) {
                 // Concurrently fetch metrics for both nodes
                 const [firstMetrics, secondMetrics] = await Promise.all([
                     getProfessorMetrics(firstNode.id),
